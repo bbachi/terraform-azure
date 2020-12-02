@@ -1,26 +1,38 @@
-resource "random_string" "uid" {
-    special = false
-    upper = false
-    length = 6
+provider "azurerm" {
+# The "feature" block is required for AzureRM provider 2.x.
+# If you are using version 1.x, the "features" block is not allowed.
+version = "~>2.0"
+
+   subscription_id = "00000000-0000-0000-0000-000000000000"
+   tenant_id = "00000000-0000-0000-0000-000000000000"
+   client_id = “${data.vault_generic_secret.azure.data[“client_id”]}”
+   client_secret = “${data.vault_generic_secret.azure.data[“client_secret”]}”
+
+   features {}
+   }
+
+provider “vault” {
+   address = var.vault_addr
+   auth_login {
+      path = “azure\\creds\\Azure-Terraform”
+      parameters = {
+      role_id   = "00000000-0000-0000-0000-0000000000"
+      #var.login_approle_role_id
+      secret_id = <your approle secret ID here>
+      #var.login_approle_secret_id
+      }    
+   }
 }
 
-resource "azurerm_resource_group" "rg-demo" {
-  name     = "rg-${var.namespace}-demo"
-  location = var.location
+data “vault_generic_secret” “azure” {
+   path = “azure\\creds\\Azure-Terraform”
 }
 
-resource "azurerm_storage_account" "example" {
-  name                     = var.storage_account_name
-  resource_group_name      = azurerm_resource_group.rg-demo.name
-  location                 = azurerm_resource_group.rg-demo.location
-  account_tier             = var.storage_account_tier
-  account_replication_type = var.account_replication_type
+module "vpc" {
+   source = "C:\\Amazic\\Azure\\Dev\\Modules\\VPC"
+   cluster_name = "Stage-LampStack"
+   }
 
-  tags = {
-    environment = var.environment
-  }
-}
-
-output "resource_group_name" {
-  value = azurerm_storage_account.example.resource_group_name
-}
+module "lamp-stack" {
+   source = " C:\\Amazic\\Azure\\Dev\\Modules\\lamp"
+   }
